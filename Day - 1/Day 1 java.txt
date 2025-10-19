@@ -1,0 +1,95 @@
+import java.io.*;
+import java.util.*;
+
+class AttendanceException extends Exception {
+    public AttendanceException(String message) {
+        super(message);
+    }
+}
+
+class Student implements Serializable, Comparable<Student> {
+    private int rollno;
+    private String sname;
+    private String course;
+    private double attendance_percentage;
+    private double score;
+
+    
+    public Student() {
+    }
+
+   
+    public Student(int rollno, String sname, String course, double attendance_percentage, double score) throws AttendanceException {
+        this.rollno = rollno;
+        this.sname = sname;
+        this.course = course;
+        this.attendance_percentage = attendance_percentage;
+        this.score = score;
+
+        if (attendance_percentage < 60) {
+            throw new AttendanceException("Attendance less than 60% for student: " + sname);
+        }
+    }
+
+    public String calculateGrade() {
+        if (score >= 90)
+            return "A";
+        else if (score >= 75)
+            return "B";
+        else if (score >= 60)
+            return "C";
+        else
+            return "D";
+    }
+
+    public double getAttendance() {
+        return attendance_percentage;
+    }
+
+    @Override
+    public int compareTo(Student s) {
+        return Double.compare(s.attendance_percentage, this.attendance_percentage); // Descending Order
+    }
+
+    @Override
+    public String toString() {
+        return "Roll No: " + rollno + ", Name: " + sname + ", Course: " + course +
+                ", Attendance: " + attendance_percentage + "%, Score: " + score +
+                ", Grade: " + calculateGrade();
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        // TreeSet for storing students in decreasing order of attendance
+        TreeSet<Student> students = new TreeSet<>();
+
+       
+        for (int i = 1; i <= 10; i++) {
+            try {
+                students.add(new Student(i, "Student" + i, "B.Tech", 50 + i * 5, 60 + i * 3));
+            } catch (AttendanceException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+
+        
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("students.dat"))) {
+            oos.writeObject(students);
+            System.out.println("\nStudents Serialized Successfully to students.dat\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream("students.dat"))) {
+            TreeSet<Student> loadedStudents = (TreeSet<Student>) ois.readObject();
+            System.out.println("Students in Decreasing Order of Attendance:\n");
+            for (Student s : loadedStudents) {
+                System.out.println(s);
+            }
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+}

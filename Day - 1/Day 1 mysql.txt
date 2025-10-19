@@ -1,0 +1,66 @@
+1.
+SELECT deptno, empname, salary
+FROM (
+    SELECT deptno, empname, salary,
+           ROW_NUMBER() OVER (PARTITION BY deptno ORDER BY salary DESC) AS roll
+    FROM employee
+) AS t
+WHERE rn <= 5;
+2
+
+2
+DELIMITER $$
+
+CREATE FUNCTION getWorkingDays(join_date DATE)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE total_days INT;
+    DECLARE sundays INT;
+    
+    -- Total days between join date and today
+    SET total_days = DATEDIFF(CURDATE(), join_date);
+    
+    -- Count Sundays between the dates (approx formula)
+    SET sundays = FLOOR(total_days / 7);
+    
+    RETURN (total_days - sundays);  -- Exclude Sundays as non-working days
+END$$
+
+DELIMITER ;
+
+
+3.
+DELIMITER $$
+
+CREATE PROCEDURE updateSalaryByWorkingDays(emp_id INT)
+BEGIN
+    DECLARE join_date DATE;
+    DECLARE working_days INT;
+    DECLARE current_salary DECIMAL(10,2);
+    DECLARE new_salary DECIMAL(10,2);
+
+    -- Get employee join date & current salary
+    SELECT joining_date, salary INTO join_date, current_salary
+    FROM employee
+    WHERE empno = emp_id;
+
+    -- Calculate working days using function
+    SET working_days = getWorkingDays(join_date);
+
+    -- Salary increment logic
+    IF working_days > 250 THEN
+        SET new_salary = current_salary * 1.20;
+    ELSEIF working_days BETWEEN 200 AND 250 THEN
+        SET new_salary = current_salary * 1.10;
+    ELSE
+        SET new_salary = current_salary * 1.05;
+    END IF;
+
+    -- Update salary
+    UPDATE employee
+    SET salary = new_salary
+    WHERE empno = emp_id;
+END$$
+
+DELIMITER ;
